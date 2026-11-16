@@ -576,11 +576,7 @@ views.item = (el, params, id) => {
       <div class="card"><div class="row"><h2 style="margin:0">Histórico de preços</h2><span class="spacer"></span><div class="chips" id="itRange">${[['7', '7d'], ['30', '30d'], ['90', '90d'], ['0', 'Tudo']].map(([v, l]) => `<button class="chip ${v === (params.get('r') || '0') ? 'on' : ''}" data-r="${v}">${l}</button>`).join('')}</div></div><div class="chart" id="itChart" style="margin-top:10px"></div></div>
       <div class="grid" style="align-content:start">
         <div class="card"><h2>Análise</h2>${st.signals.length ? st.signals.map((s) => `<div style="margin-bottom:8px"><span class="tag ${s.t}">${s.l}</span> <span class="reason">${esc(s.r)}</span></div>`).join('') : '<p class="reason">Nenhum sinal forte. Continue registrando preços — com 3+ registros o sistema compara com a média de 30 dias.</p>'}</div>
-        ${watched ? `<div class="card adm"><h2>Alertas de preço</h2>
-          <div class="row"><label class="f">Quero comprar se venda ≤<input class="price" id="itT" value="${st.w.target ? fmtFull(st.w.target) : ''}" placeholder="ex: 300k"></label>
-          <label class="f">Quero vender se compra ≥<input class="price" id="itTS" value="${st.w.targetSell ? fmtFull(st.w.targetSell) : ''}" placeholder="ex: 500k"></label></div>
-          <label class="f" style="margin-top:8px">Anotações<input id="itNote" value="${esc(st.w.note || '')}" placeholder="onde dropa, quem compra…"></label>
-          <button class="btn sm" id="itSaveT" style="margin-top:10px">Salvar</button></div>` : ''}
+        ${crystalCard(it)}
         ${pf ? `<div class="card"><h2>Na sua carteira</h2><div class="reason">${pf.qty} un · custo médio ${fmt(pf.avg)} · valor ${fmt(pf.value)} · <span class="${pf.unreal >= 0 ? 'up' : 'down'}">${fmt(pf.unreal)}</span></div></div>` : ''}
       </div>
     </div>
@@ -603,7 +599,6 @@ views.item = (el, params, id) => {
   if ($('#itWatch')) $('#itWatch').onclick = async () => { await http('POST', '/api/watch', { id }); await reload(); route(); };
   if ($('#itUnwatch')) $('#itUnwatch').onclick = async () => { if (!confirm('Parar de monitorar? O histórico de preços é mantido.')) return; await http('DELETE', '/api/watch/' + enc); await reload(); route(); };
   if ($('#itFav')) $('#itFav').onclick = async () => { await http('PUT', '/api/watch/' + enc, { fav: !st.w.fav }); await reload(); route(); };
-  if ($('#itSaveT')) $('#itSaveT').onclick = async () => { await http('PUT', '/api/watch/' + enc, { target: parsePrice($('#itT').value), targetSell: parsePrice($('#itTS').value), note: $('#itNote').value }); toast('Salvo'); await reload(); route(); };
   el.onclick = async (e) => {
     const tr = e.target.closest('tr[data-pid]'); if (!tr) return;
     const p = S.db.prices.find((x) => x.id === tr.dataset.pid);
@@ -624,6 +619,24 @@ function byCity(list, days = 30) {
   }
   return [...out.values()];
 }
+// Cristais gerados ao quebrar (cristalizar) o item e o valor mínimo de cada cristal.
+function crystalCard(it) {
+  if (!it.cryN) return '';
+  const cr = S.byId.get('crystal_' + it.cry.toLowerCase());
+  const npcPays = Math.floor((it.npc || 0) / 2);
+  const per = npcPays ? npcPays / it.cryN : null;
+  const cs = cr && S.stats.get(cr.id);
+  const mkt = cs && (cs.buy ?? cs.sell);
+  const row = (l, v, t = '') => `<div class="row" style="justify-content:space-between" title="${t}"><span class="muted">${l}</span><b>${v}</b></div>`;
+  return `<div class="card"><h2>Cristais ao quebrar</h2>
+    <div class="row" style="gap:10px;align-items:center;margin-bottom:10px">${cr ? `<img src="icons/${cr.icon}.png" width="32" height="32" alt="">` : ''}
+      <div><div style="font-size:20px"><b>${fmtFull(it.cryN)}</b> × ${cr ? `<a href="#/item/${cr.id}">${esc(cr.name)}</a>` : 'Crystal ' + it.cry}</div></div></div>
+    ${row('NPC paga pelo item', npcPays ? fmtFull(npcPays) : '—', 'Metade do preço de loja do NPC')}
+    ${row('Valor mínimo por cristal', per != null ? fmtFull(Math.round(per)) : '—', 'NPC paga ÷ quantidade de cristais. Abaixo disso, vale mais vender o item ao NPC do que quebrar.')}
+    ${mkt ? row('Cristal no mercado', `<span class="${mkt >= per ? 'up' : 'down'}">${fmtFull(mkt)}</span>`, 'Último preço registrado do cristal') + row('Quebrar rende', fmtFull(mkt * it.cryN)) : ''}
+  </div>`;
+}
+
 function cityTable(list) {
   const rows = byCity(list);
   if (!rows.length) return '';
