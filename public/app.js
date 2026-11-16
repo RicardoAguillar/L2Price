@@ -14,6 +14,20 @@ const CATS = {
 };
 const CAT_ORDER = Object.keys(CATS);
 
+// Cidades do Lineage 2 C1 (Harbingers of War)
+const CITIES = [
+  ['Iniciais', ['Talking Island Village', 'Elven Village', 'Dark Elven Village', 'Orc Village', 'Dwarven Village']],
+  ['Cidades', ['Gludin Village', 'Town of Gludio', 'Town of Dion', 'Floran Village', 'Town of Giran', 'Hunters Village', 'Town of Oren', 'Ivory Tower', 'Heine', 'Town of Aden']],
+];
+const CITY_LIST = CITIES.flatMap(([, l]) => l);
+const cityShort = (c) => (c ? c.replace(/^Town of /, '').replace(/ Village$/, '') : '—');
+let lastCity = ''; // lembra a cidade durante a sessão (registros em sequência)
+const citySelect = (id, val = '') => `<select id="${id}" required><option value="">— selecione a cidade —</option>${CITIES.map(([g, l]) => `<optgroup label="${g}">${l.map((c) => `<option ${c === val ? 'selected' : ''}>${c}</option>`).join('')}</optgroup>`).join('')}</select>`;
+function needCity(sel) {
+  if (sel.value) return false;
+  toast('Selecione a cidade onde você viu o preço', true); sel.focus(); sel.style.borderColor = 'var(--down)'; return true;
+}
+
 // ---------------- estado ----------------
 const S = { catalog: [], byId: new Map(), db: null, stats: new Map() };
 
@@ -250,7 +264,8 @@ function quickPrice(preId) {
         <label class="f">Venda (WTS) — você recebe<input id="qpSell" class="price" placeholder="ex: 1,5kk"></label>
         <label class="f">Data<input id="qpDate" type="datetime-local"></label>
       </div>
-      <label class="f" style="margin-top:10px">Observação (opcional)<input id="qpNote" placeholder="ex: loja em Giran, 50 unidades"></label>
+      <label class="f" style="margin-top:10px">Cidade onde viu o preço *${citySelect('qpCity', lastCity)}</label>
+      <label class="f" style="margin-top:10px">Observação (opcional)<input id="qpNote" placeholder="ex: 50 unidades, vendedor X"></label>
       <div class="pricehelp">Atalhos: <b>k</b> = mil, <b>kk</b> = milhão, <b>kkk</b> = bilhão · 1,5kk · 350k · 1.200.000 · Preencha só um dos dois se quiser.</div>
       <div class="pricehelp" id="qpPreview"></div>
       <div class="row" style="margin-top:16px"><button class="btn ghost" id="qpBack">← Trocar item</button><span class="spacer"></span>
@@ -281,9 +296,11 @@ function quickPrice(preId) {
     const save = async () => {
       const buy = parsePrice($('#qpBuy', m).value), sell = parsePrice($('#qpSell', m).value);
       if (buy === null && sell === null) return toast('Informe ao menos um preço', true);
+      if (needCity($('#qpCity', m))) return;
+      lastCity = $('#qpCity', m).value;
       try {
-        await http('POST', '/api/prices', { itemId: picked.id, buy, sell, date: new Date($('#qpDate', m).value).toISOString(), note: $('#qpNote', m).value });
-        toast(`✔ ${picked.name}: ${fmt(buy)} / ${fmt(sell)}`);
+        await http('POST', '/api/prices', { itemId: picked.id, buy, sell, city: lastCity, date: new Date($('#qpDate', m).value).toISOString(), note: $('#qpNote', m).value });
+        toast(`✔ ${picked.name}: ${fmt(buy)} / ${fmt(sell)} · ${cityShort(lastCity)}`);
         await reload(); route();
         if ($('#qpAgain', m).checked) { picked = null; $('#qpForm', m).hidden = true; $('#qpSearch', m).hidden = false; q.value = ''; sel = 0; render(); q.focus(); $('#qpNote', m).value = ''; }
         else closeModal();
@@ -459,6 +476,7 @@ views.lote = (el, params) => {
       <label class="row muted" style="gap:6px"><input type="checkbox" id="ltFav"> só favoritos</label>
       ${onlyStale ? '<a class="btn sm" href="#/lote">mostrar todos</a>' : ''}
       <span class="spacer"></span>
+      <label class="row" style="gap:6px">Cidade *${citySelect('ltCity', lastCity)}</label>
       <button class="btn" id="ltPaste">Colar lista de texto</button>
       <button class="btn gold" id="ltSave">Salvar tudo <span id="ltCount"></span></button>
     </div>
@@ -494,6 +512,8 @@ views.lote = (el, params) => {
     const payload = $$('.batch tr[data-id]').map((tr) => ({ itemId: tr.dataset.id, buy: parsePrice($('[data-k=buy]', tr).value), sell: parsePrice($('[data-k=sell]', tr).value), note: $('[data-k=note]', tr).value, date }))
       .filter((p) => p.buy !== null || p.sell !== null);
     if (!payload.length) return toast('Nenhum preço preenchido', true);
+    if (needCity($('#ltCity'))) return;
+    lastCity = $('#ltCity').value; payload.forEach((p) => (p.city = lastCity));
     try { await http('POST', '/api/prices', payload); toast(`✔ ${payload.length} preços salvos`); await reload(); route(); } catch (e) { toast(e.message, true); }
   };
   $('#ltPaste').onclick = pasteImport;
@@ -503,6 +523,7 @@ function pasteImport() {
   if (denyRO()) return;
   openModal(`<h2>Importar lista de preços</h2>
     <p class="reason">Uma linha por item: <b>nome ; compra ; venda</b> (separador <b>;</b> ou <b>tab</b> — ideal para colar do Excel/Google Sheets). Deixe vazio o que não souber.</p>
+    <label class="f" style="margin-bottom:10px">Cidade onde viu os preços *${citySelect('piCity', lastCity)}</label>
     <textarea id="piT" placeholder="Coarse Bone Powder; 9k; 11k&#10;Steel; 45k; 52k&#10;Crystal: D Grade; ; 1,1k"></textarea>
     <div id="piPrev" class="pricehelp"></div>
     <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn ghost" id="piC">Cancelar</button><button class="btn gold" id="piS">Importar</button></div>`, (m) => {
@@ -522,6 +543,8 @@ function pasteImport() {
       const date = new Date().toISOString();
       const ok = parsed.filter((p) => p.it && (p.buy !== null || p.sell !== null)).map((p) => ({ itemId: p.it.id, buy: p.buy, sell: p.sell, date }));
       if (!ok.length) return toast('Nada para importar', true);
+      if (needCity($('#piCity', m))) return;
+      lastCity = $('#piCity', m).value; ok.forEach((p) => (p.city = lastCity));
       await http('POST', '/api/prices', ok); toast(`✔ ${ok.length} preços importados`); closeModal(); await reload(); route();
     };
   });
@@ -559,10 +582,11 @@ views.item = (el, params, id) => {
         ${pf ? `<div class="card"><h2>Na sua carteira</h2><div class="reason">${pf.qty} un · custo médio ${fmt(pf.avg)} · valor ${fmt(pf.value)} · <span class="${pf.unreal >= 0 ? 'up' : 'down'}">${fmt(pf.unreal)}</span></div></div>` : ''}
       </div>
     </div>
+    ${cityTable(st.list)}
     <div class="card flush" style="margin-top:16px"><div style="padding:16px 16px 0"><h2>Registros (${st.list.length})</h2></div>
-      <table><thead><tr><th>Data</th><th class="r">Compra (WTB)</th><th class="r">Venda (WTS)</th><th class="r">Spread</th><th>Obs.</th><th></th></tr></thead><tbody>
-      ${[...st.list].reverse().map((p) => `<tr data-pid="${p.id}"><td>${fmtDT(p.date)}</td><td class="r buy">${fmtFull(p.buy)}</td><td class="r sell">${fmtFull(p.sell)}</td><td class="r muted">${p.buy != null && p.sell != null ? fmt(p.sell - p.buy) : '—'}</td><td class="muted">${esc(p.note)}</td>
-        <td class="r"><button class="btn sm ghost" data-edit>editar</button><button class="btn sm ghost danger" data-del>excluir</button></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum registro ainda</td></tr>'}
+      <table><thead><tr><th>Data</th><th>Cidade</th><th class="r">Compra (WTB)</th><th class="r">Venda (WTS)</th><th class="r">Spread</th><th>Obs.</th><th></th></tr></thead><tbody>
+      ${[...st.list].reverse().map((p) => `<tr data-pid="${p.id}"><td>${fmtDT(p.date)}</td><td>${esc(cityShort(p.city))}</td><td class="r buy">${fmtFull(p.buy)}</td><td class="r sell">${fmtFull(p.sell)}</td><td class="r muted">${p.buy != null && p.sell != null ? fmt(p.sell - p.buy) : '—'}</td><td class="muted">${esc(p.note)}</td>
+        <td class="r"><button class="btn sm ghost" data-edit>editar</button><button class="btn sm ghost danger" data-del>excluir</button></td></tr>`).join('') || '<tr><td colspan="7" class="empty">Nenhum registro ainda</td></tr>'}
       </tbody></table></div>`;
   const r = Number(params.get('r') || 0);
   const pts = st.list.filter((p) => !r || Date.now() - new Date(p.date) <= r * DAY);
@@ -582,13 +606,63 @@ views.item = (el, params, id) => {
     const tr = e.target.closest('tr[data-pid]'); if (!tr) return;
     const p = S.db.prices.find((x) => x.id === tr.dataset.pid);
     if (e.target.closest('[data-del]')) { if (!confirm('Excluir este registro?')) return; await http('DELETE', '/api/prices/' + p.id); await reload(); route(); }
-    if (e.target.closest('[data-edit]')) {
-      const b = prompt('Compra (WTB):', p.buy ?? ''); if (b === null) return;
-      const s = prompt('Venda (WTS):', p.sell ?? ''); if (s === null) return;
-      await http('PUT', '/api/prices/' + p.id, { buy: parsePrice(b), sell: parsePrice(s) }); await reload(); route();
-    }
+    if (e.target.closest('[data-edit]')) editPrice(p);
   };
 };
+
+// Preço mais recente por cidade
+function byCity(list, days = 30) {
+  const out = new Map();
+  for (const p of list) {
+    if (!p.city || Date.now() - new Date(p.date) > days * DAY) continue;
+    const c = out.get(p.city) || { city: p.city, buy: null, sell: null, date: null, n: 0 };
+    if (p.buy !== null) c.buy = p.buy;
+    if (p.sell !== null) c.sell = p.sell;
+    c.date = p.date; c.n++; out.set(p.city, c);
+  }
+  return [...out.values()];
+}
+function cityTable(list) {
+  const rows = byCity(list);
+  if (!rows.length) return '';
+  const sells = rows.filter((r) => r.sell !== null), buys = rows.filter((r) => r.buy !== null);
+  const minSell = sells.length ? Math.min(...sells.map((r) => r.sell)) : null, maxBuy = buys.length ? Math.max(...buys.map((r) => r.buy)) : null;
+  rows.sort((a, b) => CITY_LIST.indexOf(a.city) - CITY_LIST.indexOf(b.city));
+  return `<div class="card flush" style="margin-top:16px"><div style="padding:16px 16px 0"><h2>Preço por cidade <span class="hint">último registro de cada cidade nos últimos 30 dias</span></h2></div>
+    <table><thead><tr><th>Cidade</th><th class="r">Compra (WTB)</th><th class="r">Venda (WTS)</th><th class="r">Registros</th><th class="r">Atualizado</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td>${esc(r.city)}</td>
+      <td class="r buy">${rows.length > 1 && r.buy !== null && r.buy === maxBuy ? '<span class="tag sellrec" title="Onde pagam mais pelo item">melhor p/ vender</span> ' : ''}${fmt(r.buy)}</td>
+      <td class="r sell">${rows.length > 1 && r.sell !== null && r.sell === minSell ? '<span class="tag buyrec" title="Onde o item está mais barato">mais barato</span> ' : ''}${fmt(r.sell)}</td>
+      <td class="r muted">${r.n}</td><td class="r muted">há ${ago(r.date)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function editPrice(p) {
+  if (denyRO()) return;
+  openModal(`<h2>Editar registro</h2>
+    <div class="row"><label class="f">Compra (WTB)<input id="epB" class="price" value="${p.buy ?? ''}"></label>
+    <label class="f">Venda (WTS)<input id="epS" class="price" value="${p.sell ?? ''}"></label></div>
+    <label class="f" style="margin-top:10px">Cidade *${citySelect('epC', p.city || '')}</label>
+    <label class="f" style="margin-top:10px">Observação<input id="epN" value="${esc(p.note || '')}"></label>
+    <div class="row" style="margin-top:16px"><span class="spacer"></span><button class="btn ghost" id="epX">Cancelar</button><button class="btn gold" id="epOk">Salvar</button></div>`, (m) => {
+    $('#epX', m).onclick = closeModal;
+    $('#epOk', m).onclick = async () => {
+      const buy = parsePrice($('#epB', m).value), sell = parsePrice($('#epS', m).value);
+      if (buy === null && sell === null) return toast('Informe ao menos um preço', true);
+      if (needCity($('#epC', m))) return;
+      try { await http('PUT', '/api/prices/' + p.id, { buy, sell, city: $('#epC', m).value, note: $('#epN', m).value }); closeModal(); await reload(); route(); } catch (e) { toast(e.message, true); }
+    };
+  });
+}
+function arbitrage(all) {
+  const out = [];
+  for (const s of all) {
+    const rows = byCity(s.list, 7);
+    const sells = rows.filter((r) => r.sell !== null), buys = rows.filter((r) => r.buy !== null);
+    if (!sells.length || !buys.length) continue;
+    const cheap = sells.reduce((x, y) => (y.sell < x.sell ? y : x)), rich = buys.reduce((x, y) => (y.buy > x.buy ? y : x));
+    if (cheap.city !== rich.city && rich.buy > cheap.sell) { s._arb = { from: cheap.city, to: rich.city, profit: rich.buy - cheap.sell }; out.push({ s, p: s._arb.profit / cheap.sell }); }
+  }
+  return out.sort((x, y) => y.p - x.p);
+}
 
 // ----- Oportunidades -----
 views.oportunidades = (el) => {
@@ -606,6 +680,7 @@ views.oportunidades = (el) => {
       ${block('Acima da média (vender)', 'preço atual vs média de 30 dias', below.filter((x) => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 12).map((x) => x.s), (s) => chg((s.ref - s.avg30) / s.avg30))}
       ${block('Momentum (investir)', 'maior alta em 7 dias', all.filter((s) => s.ch7 > 0).sort((a, b) => b.ch7 - a.ch7).slice(0, 12), (s) => chg(s.ch7))}
       ${block('Revenda ao NPC', 'compra no mercado abaixo do que o NPC paga', all.filter((s) => s.npcSell && s.buy !== null && s.buy < s.npcSell).sort((a, b) => (b.npcSell - b.buy) - (a.npcSell - a.buy)), (s) => `+${fmt(s.npcSell - s.buy)}/un`)}
+      ${block('Arbitragem entre cidades', 'comprar numa cidade e vender em outra (últimos 7 dias)', arbitrage(all).slice(0, 12).map((x) => x.s), (s) => `+${fmt(s._arb.profit)}/un<br><small class="muted">${esc(cityShort(s._arb.from))} → ${esc(cityShort(s._arb.to))}</small>`)}
       ${block('Mais voláteis', 'oscilam muito — bons para trade, arriscados para guardar', all.filter((s) => s.vol).sort((a, b) => b.vol - a.vol).slice(0, 12), (s) => `${(s.vol * 100).toFixed(0)}%`)}
     </div>`;
   el.onclick = (e) => { const g = e.target.closest('[data-go]'); if (g) location.hash = '#/item/' + encodeURIComponent(g.dataset.go); };
@@ -712,7 +787,7 @@ views.config = (el) => {
   $('#cfSave').onclick = async () => { await http('PUT', '/api/settings', { server: $('#cfS').value }); await reload(); setServerName(); toast('Salvo'); };
   $('#cfJson').onclick = () => dl(`l2price-backup-${stamp}.json`, JSON.stringify(S.db, null, 1), 'application/json');
   const csv = (rows) => '﻿' + rows.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
-  $('#cfCsv').onclick = () => dl(`l2price-precos-${stamp}.csv`, csv([['Data', 'Item', 'Categoria', 'Compra', 'Venda', 'Obs'], ...[...S.db.prices].sort((a, b) => new Date(a.date) - new Date(b.date)).map((p) => { const it = S.byId.get(p.itemId); return [new Date(p.date).toLocaleString('pt-BR'), it?.name, CATS[it?.cat], p.buy, p.sell, p.note]; })]), 'text/csv');
+  $('#cfCsv').onclick = () => dl(`l2price-precos-${stamp}.csv`, csv([['Data', 'Item', 'Categoria', 'Cidade', 'Compra', 'Venda', 'Obs'], ...[...S.db.prices].sort((a, b) => new Date(a.date) - new Date(b.date)).map((p) => { const it = S.byId.get(p.itemId); return [new Date(p.date).toLocaleString('pt-BR'), it?.name, CATS[it?.cat], p.city || '', p.buy, p.sell, p.note]; })]), 'text/csv');
   $('#cfCsv2').onclick = () => dl(`l2price-mercado-${stamp}.csv`, csv([['Item', 'Categoria', 'Compra', 'Venda', 'Spread', 'Var 7d %', 'Var 30d %', 'Média 30d', 'NPC paga', 'Sinais', 'Atualizado'], ...watchedStats().map((s) => [s.it.name, CATS[s.it.cat], s.buy, s.sell, s.spread, s.ch7 != null ? (s.ch7 * 100).toFixed(1) : '', s.ch30 != null ? (s.ch30 * 100).toFixed(1) : '', s.avg30 ? Math.round(s.avg30) : '', s.npcSell || '', s.signals.map((x) => x.l).join(' '), s.last ? new Date(s.last).toLocaleString('pt-BR') : ''])]), 'text/csv');
   $('#cfFile').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;

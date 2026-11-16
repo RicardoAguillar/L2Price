@@ -27,7 +27,7 @@ async function insertChunks(table, rows) {
 }
 
 const toWatch = (r) => ({ id: r.item_id, fav: r.fav, target: r.target, targetSell: r.target_sell, note: r.note || '' });
-const toPrice = (r) => ({ id: r.id, itemId: r.item_id, buy: r.buy, sell: r.sell, date: r.date, note: r.note || '' });
+const toPrice = (r) => ({ id: r.id, itemId: r.item_id, buy: r.buy, sell: r.sell, city: r.city || '', date: r.date, note: r.note || '' });
 const toTrade = (r) => ({ id: r.id, itemId: r.item_id, type: r.type, qty: r.qty, price: r.price, date: r.date, note: r.note || '' });
 
 async function ensureWatched(ids) {
@@ -61,16 +61,17 @@ export async function http(method, url, body) {
 
   if (method === 'POST' && p === '/api/prices') {
     const list = (Array.isArray(body) ? body : [body]).map((x) => ({
-      item_id: x.itemId, buy: num(x.buy), sell: num(x.sell), date: x.date || new Date().toISOString(), note: String(x.note || '').slice(0, 200),
+      item_id: x.itemId, buy: num(x.buy), sell: num(x.sell), city: x.city || null, date: x.date || new Date().toISOString(), note: String(x.note || '').slice(0, 200),
     })).filter((x) => x.buy !== null || x.sell !== null);
     if (!list.length) throw new Error('Informe preço de compra ou venda');
+    if (list.some((x) => !x.city)) throw new Error('Selecione a cidade onde o preço foi visto');
     await insertChunks('prices', list);
     await ensureWatched(list.map((x) => x.item_id));
     return { ok: true };
   }
   if ((m = p.match(/^\/api\/prices\/(.+)$/))) {
     if (method === 'DELETE') must(await sb.from('prices').delete().eq('id', m[1]));
-    else must(await sb.from('prices').update({ buy: num(body.buy), sell: num(body.sell) }).eq('id', m[1]));
+    else must(await sb.from('prices').update({ buy: num(body.buy), sell: num(body.sell), city: body.city || null, note: String(body.note || '').slice(0, 200) }).eq('id', m[1]));
     return { ok: true };
   }
 
@@ -103,7 +104,7 @@ export async function http(method, url, body) {
     if (!Array.isArray(body.prices) || !Array.isArray(body.watch)) throw new Error('Arquivo de backup inválido');
     for (const t of ['prices', 'trades', 'watch']) must(await sb.from(t).delete().not('user_id', 'is', null));
     await insertChunks('watch', body.watch.map((w) => ({ item_id: w.id, fav: !!w.fav, target: num(w.target), target_sell: num(w.targetSell), note: w.note || '' })));
-    await insertChunks('prices', body.prices.map((x) => ({ item_id: x.itemId, buy: num(x.buy), sell: num(x.sell), date: x.date, note: x.note || '' })).filter((x) => x.buy !== null || x.sell !== null));
+    await insertChunks('prices', body.prices.map((x) => ({ item_id: x.itemId, buy: num(x.buy), sell: num(x.sell), city: x.city || null, date: x.date, note: x.note || '' })).filter((x) => x.buy !== null || x.sell !== null));
     await insertChunks('trades', (body.trades || []).map((t) => ({ item_id: t.itemId, type: t.type, qty: t.qty, price: num(t.price) || 0, date: t.date, note: t.note || '' })));
     if (body.settings?.server) must(await sb.from('settings').update({ server: body.settings.server }).not('user_id', 'is', null));
     return { ok: true };
