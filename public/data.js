@@ -57,6 +57,17 @@ export async function http(method, url, body) {
   const p = url;
   let m;
   if (method === 'GET' && p === '/api/db') return loadDb();
+  if (p.startsWith('/api/trades')) { // carteira: individual, qualquer usuário logado
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) throw new Error('Entre com sua conta para usar a carteira.');
+  if (method === 'POST' && p === '/api/trades') {
+    must(await sb.from('trades').insert({ item_id: body.itemId, type: body.type === 'sell' ? 'sell' : 'buy', qty: Math.max(1, num(body.qty) || 1),
+      price: num(body.price) || 0, date: body.date || new Date().toISOString(), note: String(body.note || '').slice(0, 200) }));
+    if (isAdmin) await ensureWatched([body.itemId]);
+    return { ok: true };
+  }
+  if ((m = p.match(/^\/api\/trades\/(.+)$/)) && method === 'DELETE') { must(await sb.from('trades').delete().eq('id', m[1])); return { ok: true }; }
+  }
   if (!isAdmin) throw new Error('Somente administradores podem alterar dados.');
 
   if (method === 'POST' && p === '/api/prices') {
@@ -90,13 +101,6 @@ export async function http(method, url, body) {
     return { ok: true };
   }
 
-  if (method === 'POST' && p === '/api/trades') {
-    must(await sb.from('trades').insert({ item_id: body.itemId, type: body.type === 'sell' ? 'sell' : 'buy', qty: Math.max(1, num(body.qty) || 1),
-      price: num(body.price) || 0, date: body.date || new Date().toISOString(), note: String(body.note || '').slice(0, 200) }));
-    await ensureWatched([body.itemId]);
-    return { ok: true };
-  }
-  if ((m = p.match(/^\/api\/trades\/(.+)$/)) && method === 'DELETE') { must(await sb.from('trades').delete().eq('id', m[1])); return { ok: true }; }
 
   if (method === 'PUT' && p === '/api/settings') { must(await sb.from('settings').update({ server: body.server }).not('user_id', 'is', null)); return { ok: true }; }
 

@@ -1,5 +1,5 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
-import { http, sb, configured, setCatalog, checkAdmin } from './data.js';
+import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=8';
 let ADMIN = false;
 const denyRO = () => { if (ADMIN) return false; toast(currentUser ? 'Somente administradores podem registrar ou alterar dados.' : 'Entre como administrador para registrar ou alterar dados.', true); if (!currentUser) openLogin(); return true; };
 const $ = (s, el = document) => el.querySelector(s);
@@ -322,7 +322,7 @@ function quickPrice(preId) {
 }
 
 function tradeModal(preId, type = 'buy') {
-  if (denyRO()) return;
+  if (!currentUser) { toast('Entre com sua conta para usar a carteira.', true); return openLogin(); }
   let picked = preId ? S.byId.get(preId) : null;
   openModal(`<h2>Registrar operação na carteira</h2>
     <div id="tmPick"></div>
@@ -721,9 +721,10 @@ function portfolio() {
   return { rows, value, cost, realized, pl: value - cost + realized };
 }
 views.carteira = (el) => {
+  if (!currentUser) { el.innerHTML = `<h1>Carteira de investimentos</h1><div class="card empty">A carteira é individual. <a href="#" id="pfLogin">Entre com sua conta</a> para ver e registrar suas operações.</div>`; $('#pfLogin').onclick = (e) => { e.preventDefault(); openLogin(); }; return; }
   const pf = portfolio();
   const trades = [...S.db.trades].sort((a, b) => new Date(b.date) - new Date(a.date));
-  el.innerHTML = `<h1>Carteira de investimentos</h1><p class="sub">Registre o que você comprou para revender. O valor atual usa o preço de <b>Compra (WTB)</b> mais recente — quanto você conseguiria vender agora.</p>
+  el.innerHTML = `<h1>Carteira de investimentos</h1><p class="sub">Sua carteira pessoal — só você vê estas operações. Registre o que você comprou para revender. O valor atual usa o preço de <b>Compra (WTB)</b> mais recente — quanto você conseguiria vender agora.</p>
     <div class="grid g4" style="margin-bottom:16px">
       <div class="card kpi"><div class="lbl">Valor de mercado</div><div class="val">${fmt(pf.value)}</div><div class="foot">${fmtFull(pf.value)} adena</div></div>
       <div class="card kpi"><div class="lbl">Custo em estoque</div><div class="val">${fmt(pf.cost)}</div></div>
@@ -736,12 +737,12 @@ views.carteira = (el) => {
         <td class="r ${r.unreal >= 0 ? 'up' : 'down'}">${fmt(r.unreal)}</td><td class="r">${r.cost ? chg(r.unreal / r.cost) : '—'}</td><td class="r ${r.realized >= 0 ? 'up' : 'down'}">${fmt(r.realized)}</td><td>${r.st ? sigTags(r.st) : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Nenhuma posição. Clique em “Registrar compra”.</td></tr>'}
     </tbody></table></div>
     <div class="card flush"><div style="padding:16px 16px 0"><h2>Histórico de operações</h2></div><table><thead><tr><th>Data</th><th>Item</th><th>Tipo</th><th class="r">Qtd</th><th class="r">Preço un.</th><th class="r">Total</th><th>Obs.</th><th></th></tr></thead><tbody>
-      ${trades.map((t) => { const it = S.byId.get(t.itemId); return `<tr><td>${fmtDT(t.date)}</td><td>${it ? itemCell(it) : t.itemId}</td><td>${t.type === 'buy' ? '<span class="buy">Compra</span>' : '<span class="sell">Venda</span>'}</td><td class="r">${fmtFull(t.qty)}</td><td class="r">${fmt(t.price)}</td><td class="r">${fmt(t.qty * t.price)}</td><td class="muted">${esc(t.note)}</td><td class="r"><button class="btn sm ghost danger" data-del="${t.id}">excluir</button></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Sem operações</td></tr>'}
+      ${trades.map((t) => { const it = S.byId.get(t.itemId); return `<tr><td>${fmtDT(t.date)}</td><td>${it ? itemCell(it) : t.itemId}</td><td>${t.type === 'buy' ? '<span class="buy">Compra</span>' : '<span class="sell">Venda</span>'}</td><td class="r">${fmtFull(t.qty)}</td><td class="r">${fmt(t.price)}</td><td class="r">${fmt(t.qty * t.price)}</td><td class="muted">${esc(t.note)}</td><td class="r"><button class="btn sm ghost danger" data-tdel="${t.id}">excluir</button></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Sem operações</td></tr>'}
     </tbody></table></div>`;
   $('#pfBuy').onclick = () => tradeModal(null, 'buy');
   $('#pfSell').onclick = () => tradeModal(null, 'sell');
   el.onclick = async (e) => {
-    const d = e.target.closest('[data-del]'); if (d) { if (confirm('Excluir operação?')) { await http('DELETE', '/api/trades/' + d.dataset.del); await reload(); route(); } return; }
+    const d = e.target.closest('[data-tdel]'); if (d) { if (confirm('Excluir operação?')) { await http('DELETE', '/api/trades/' + d.dataset.tdel); await reload(); route(); } return; }
     const g = e.target.closest('[data-go]'); if (g) location.hash = '#/item/' + encodeURIComponent(g.dataset.go);
   };
 };
@@ -868,7 +869,7 @@ async function applySession(user) {
   try {
     ADMIN = user ? await checkAdmin() : false;
     if (!user) await checkAdmin(); // zera o estado de admin na camada de dados
-    document.body.classList.toggle('readonly', !ADMIN);
+    document.body.classList.toggle('readonly', !ADMIN); document.body.classList.toggle('anon', !user);
     $('#roleTag').textContent = ADMIN ? 'administrador' : 'somente leitura';
     if (!S.db) $('#app').innerHTML = '<div class="empty">Carregando dados do mercado…</div>';
     await reload(); setServerName(); route();
@@ -879,7 +880,7 @@ async function applySession(user) {
 function openLogin() { $('#lgMsg').textContent = ''; $('#loginBg').hidden = false; $('#lgEmail').focus(); }
 
 (async () => {
-  S.catalog = await (await fetch('data/catalog.json')).json();
+  S.catalog = await (await fetch('data/catalog.json?v=8')).json();
   S.byId = new Map(S.catalog.map((c) => [c.id, c]));
   setCatalog(S.catalog);
   if (!configured) { $('#app').innerHTML = '<div class="empty">Supabase não configurado: preencha <b>public/config.js</b>.</div>'; return; }
