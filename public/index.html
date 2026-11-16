@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>L2Price — Mercado C1 · L2 Reborn Legacy</title>
-<link rel="icon" href="/icons/etc_crystal_gold_i00.png">
-<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="icons/etc_crystal_gold_i00.png">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <aside class="sidebar">
   <div class="brand">
-    <img src="/icons/etc_crystal_gold_i00.png" alt="">
+    <img src="icons/etc_crystal_gold_i00.png" alt="">
     <div><b>L2Price</b><small id="serverName">L2 Reborn · Legacy C1</small></div>
   </div>
   <nav>
@@ -23,8 +23,20 @@
     <a href="#/config" data-route="config"><span>⚙</span>Backup & Ajustes</a>
   </nav>
   <button class="btn gold quick" id="quickBtn">+ Registrar preço <kbd>N</kbd></button>
-  <div class="side-foot">Dados de itens e ícones: l2hub.info (C1)</div>
+  <div class="side-foot"><div id="userBox" hidden><span id="userEmail"></span> · <a href="#" id="logoutBtn">sair</a></div>Dados de itens e ícones: l2hub.info (C1)</div>
 </aside>
+<div class="login-bg" id="loginBg" hidden>
+  <form class="login" id="loginForm">
+    <img src="icons/etc_crystal_gold_i00.png" alt="">
+    <h1>L2Price</h1>
+    <p class="sub" id="loginSub">Controle de preços · L2 Reborn Legacy (C1)</p>
+    <label class="f">E-mail<input type="email" id="lgEmail" required autocomplete="email"></label>
+    <label class="f">Senha<input type="password" id="lgPass" required minlength="6" autocomplete="current-password"></label>
+    <button class="btn gold" type="submit" id="lgBtn">Entrar</button>
+    <a href="#" id="lgToggle">Primeiro acesso? Criar conta</a>
+    <div class="pricehelp" id="lgMsg"></div>
+  </form>
+</div>
 <main id="app"></main>
 
 <div class="modal-bg" id="modalBg" hidden>
@@ -32,6 +44,6 @@
 </div>
 <div id="toasts"></div>
 <div id="tip" class="tip" hidden></div>
-<script type="module" src="/app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

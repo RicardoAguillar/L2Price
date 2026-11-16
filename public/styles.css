@@ -156,3 +156,10 @@ textarea{width:100%;min-height:140px;font-family:Consolas,monospace;font-size:12
 
 *{scrollbar-color:#3d3a33 #161513;scrollbar-width:thin}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#161513}::-webkit-scrollbar-thumb{background:#3d3a33;border-radius:6px}
+.login-bg{position:fixed;inset:0;background:radial-gradient(circle at 50% 30%,#1f1b12,#0b0a09);display:flex;align-items:center;justify-content:center;z-index:100}
+.login-bg[hidden]{display:none}
+.login{background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:28px;width:min(360px,92vw);display:flex;flex-direction:column;gap:12px;text-align:center}
+.login img{width:48px;height:48px;margin:0 auto;border:1px solid var(--gold2);border-radius:8px}
+.login h1{color:var(--gold)}
+.login .f{text-align:left}
+#userBox{margin-bottom:6px;color:var(--text2);word-break:break-all}

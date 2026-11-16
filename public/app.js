@@ -1,4 +1,5 @@
-// L2Price — frontend (vanilla JS, sem dependências)
+// L2Price — frontend (vanilla JS) com dados no Supabase
+import { http, sb, configured, setCatalog } from './data.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -14,12 +15,6 @@ const CAT_ORDER = Object.keys(CATS);
 // ---------------- estado ----------------
 const S = { catalog: [], byId: new Map(), db: null, stats: new Map() };
 
-async function http(method, url, body) {
-  const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || r.statusText);
-  return j;
-}
 async function reload() { S.db = await http('GET', '/api/db'); computeStats(); }
 
 // ---------------- formatação / parsing ----------------
@@ -65,7 +60,7 @@ function ago(d) {
   if (s < 86400) return Math.round(s / 3600) + ' h';
   return Math.round(s / 86400) + ' d';
 }
-const icon = (it, cls = '') => `<img class="ico ${cls}" loading="lazy" src="/icons/${esc(it.icon)}.png" alt="" onerror="this.src='/img/noicon.svg'">`;
+const icon = (it, cls = '') => `<img class="ico ${cls}" loading="lazy" src="icons/${esc(it.icon)}.png" alt="" onerror="this.src='img/noicon.svg'">`;
 const itemCell = (it, sub) => `<div class="item">${icon(it)}<div class="nm">${esc(it.name)}${sub !== undefined ? `<small>${sub}</small>` : ''}</div></div>`;
 
 function toast(msg, err) {
@@ -691,7 +686,7 @@ views.catalogo = (el) => {
 
 // ----- Backup & ajustes -----
 views.config = (el) => {
-  el.innerHTML = `<h1>Backup & Ajustes</h1><p class="sub">Seus dados ficam no arquivo <code>data/db.json</code> (com cópia automática <code>db.json.bak</code>).</p>
+  el.innerHTML = `<h1>Backup & Ajustes</h1><p class="sub">Seus dados ficam salvos na nuvem (Supabase), sincronizados em qualquer dispositivo onde você entrar com sua conta.</p>
     <div class="grid g2">
       <div class="card"><h2>Servidor</h2><label class="f">Nome exibido<input id="cfS" value="${esc(S.db.settings.server || '')}"></label><button class="btn sm" id="cfSave" style="margin-top:10px">Salvar</button></div>
       <div class="card"><h2>Exportar</h2><p class="reason">Backup completo (JSON) ou planilha do histórico de preços (CSV, abre no Excel).</p>
@@ -743,8 +738,49 @@ $('#quickBtn').onclick = () => quickPrice();
 window.addEventListener('hashchange', route);
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => location.hash.startsWith('#/item/') && route(), 250); });
 
+// ---------------- login / inicialização ----------------
+let started = false;
+async function start(user) {
+  $('#loginBg').hidden = true;
+  $('#userBox').hidden = false; $('#userEmail').textContent = user.email;
+  if (started) return; started = true;
+  $('#app').innerHTML = '<div class="empty">Carregando seus dados…</div>';
+  try { await reload(); setServerName(); route(); }
+  catch (e) { $('#app').innerHTML = `<div class="empty">Erro ao carregar dados: ${esc(e.message)}<br><br>Confira se o arquivo <b>supabase/schema.sql</b> foi executado no SQL Editor do Supabase.</div>`; }
+}
+function showLogin(msg) {
+  started = false; S.db = null;
+  $('#loginBg').hidden = false; $('#userBox').hidden = true;
+  if (msg) $('#lgMsg').innerHTML = msg;
+}
+
 (async () => {
-  S.catalog = await http('GET', '/api/catalog');
+  S.catalog = await (await fetch('data/catalog.json')).json();
   S.byId = new Map(S.catalog.map((c) => [c.id, c]));
-  await reload(); setServerName(); route();
+  setCatalog(S.catalog);
+  if (!configured) return showLogin('<span class="down">Supabase não configurado: preencha <b>public/config.js</b> com a URL e a chave anon do projeto.</span>');
+
+  let signup = false;
+  $('#lgToggle').onclick = (e) => {
+    e.preventDefault(); signup = !signup;
+    $('#lgBtn').textContent = signup ? 'Criar conta' : 'Entrar';
+    $('#lgToggle').textContent = signup ? 'Já tenho conta — entrar' : 'Primeiro acesso? Criar conta';
+  };
+  $('#loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const email = $('#lgEmail').value.trim(), password = $('#lgPass').value;
+    $('#lgBtn').disabled = true; $('#lgMsg').textContent = '';
+    const { data, error } = signup
+      ? await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split('#')[0] } })
+      : await sb.auth.signInWithPassword({ email, password });
+    $('#lgBtn').disabled = false;
+    if (error) return ($('#lgMsg').innerHTML = `<span class="down">${esc(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos' : error.message)}</span>`);
+    if (signup && !data.session) $('#lgMsg').innerHTML = '<span class="up">Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.</span>';
+  };
+  $('#logoutBtn').onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session?.user) setTimeout(() => start(session.user)); // fora do callback (recomendação do supabase-js)
+    else showLogin();
+  });
 })();

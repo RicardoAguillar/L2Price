@@ -50,7 +50,7 @@ for (const it of raw) {
   catalog.push({ id: it.slug, name: it.name, icon: it.icon, cat: classify(it), kind: it.kind === 'none' ? '' : it.kind, npc: it.npcPrice });
 }
 catalog.sort((a, b) => a.name.localeCompare(b.name));
-await writeFile(path.join(ROOT, 'data', 'catalog.json'), JSON.stringify(catalog));
+await writeFile(path.join(ROOT, 'public', 'data', 'catalog.json'), JSON.stringify(catalog));
 const count = {};
 catalog.forEach((c) => (count[c.cat] = (count[c.cat] || 0) + 1));
 console.log(catalog.length, count);
