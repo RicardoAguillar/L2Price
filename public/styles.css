@@ -163,3 +163,9 @@ textarea{width:100%;min-height:140px;font-family:Consolas,monospace;font-size:12
 .login h1{color:var(--gold)}
 .login .f{text-align:left}
 #userBox{margin-bottom:6px;color:var(--text2);word-break:break-all}
+
+/* modo somente leitura (usuário não-administrador) */
+body.readonly :is(#quickBtn, nav a[data-route=lote], #mkQuick, button[data-qp], [data-fav], #itFav, #itUnwatch, #itWatch, #itTrade, #itQp,
+  [data-edit], [data-del], #pfSell, #pfBuy, #cgAll, [data-add], .adm, button[onclick*="catalogo"], button[onclick*="lote"]) { display:none !important }
+body.readonly [data-qp] { cursor:default !important }
+#roleTag{margin-top:4px}

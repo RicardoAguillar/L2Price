@@ -1,5 +1,7 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
-import { http, sb, configured, setCatalog } from './data.js';
+import { http, sb, configured, setCatalog, checkAdmin } from './data.js';
+let ADMIN = false;
+const denyRO = () => { if (ADMIN) return false; toast('Somente administradores podem registrar ou alterar dados.', true); return true; };
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -235,6 +237,7 @@ $('#modalBg').addEventListener('mousedown', (e) => { if (e.target.id === 'modalB
 
 // Registro rápido de preço: busca → compra → venda → Enter
 function quickPrice(preId) {
+  if (denyRO()) return;
   let picked = preId ? S.byId.get(preId) : null, sel = 0, results = [];
   openModal(`
     <h2>Registrar preço</h2>
@@ -302,6 +305,7 @@ function quickPrice(preId) {
 }
 
 function tradeModal(preId, type = 'buy') {
+  if (denyRO()) return;
   let picked = preId ? S.byId.get(preId) : null;
   openModal(`<h2>Registrar operação na carteira</h2>
     <div id="tmPick"></div>
@@ -362,7 +366,7 @@ views.dashboard = (el) => {
       <div class="card kpi"><div class="lbl">Registros nas últimas 24h</div><div class="val">${updated24}</div><div class="foot">${S.db.prices.length} registros no total</div></div>
       <div class="card kpi"><div class="lbl">Carteira (valor de mercado)</div><div class="val">${fmt(pf.value)}</div><div class="foot">Lucro/prejuízo: <span class="${pf.pl >= 0 ? 'up' : 'down'}">${fmt(pf.pl)}</span></div></div>
     </div>
-    ${!S.db.prices.length ? `<div class="card" style="margin-bottom:16px"><h2>Comece por aqui 👋</h2><p class="reason">1. Clique em <b>Atualizar preços</b> e digite os preços dos materiais que você viu no mercado (aceita 1,5kk / 350k).<br>2. Ou aperte <kbd>N</kbd> em qualquer tela para registrar um único item rapidamente.<br>3. Adicione mais itens ao monitoramento pelo <b>Catálogo C1</b> (3.900 itens com ícones).<br>4. Com alguns dias de registros, o sistema mostra altas, quedas e oportunidades automaticamente.</p><button class="btn gold" onclick="location.hash='#/lote'">Atualizar preços agora</button></div>` : ''}
+    ${!S.db.prices.length ? `<div class="card adm" style="margin-bottom:16px"><h2>Comece por aqui 👋</h2><p class="reason">1. Clique em <b>Atualizar preços</b> e digite os preços dos materiais que você viu no mercado (aceita 1,5kk / 350k).<br>2. Ou aperte <kbd>N</kbd> em qualquer tela para registrar um único item rapidamente.<br>3. Adicione mais itens ao monitoramento pelo <b>Catálogo C1</b> (3.900 itens com ícones).<br>4. Com alguns dias de registros, o sistema mostra altas, quedas e oportunidades automaticamente.</p><button class="btn gold" onclick="location.hash='#/lote'">Atualizar preços agora</button></div>` : ''}
     <div class="grid g3">
       <div class="card"><h2>▲ Maiores altas <span class="hint">7 dias</span></h2><div class="mlist">${ups.map((s) => mi(s, chg(s.ch7))).join('') || '<div class="empty">Sem dados ainda</div>'}</div></div>
       <div class="card"><h2>▼ Maiores quedas <span class="hint">7 dias</span></h2><div class="mlist">${downs.map((s) => mi(s, chg(s.ch7))).join('') || '<div class="empty">Sem dados ainda</div>'}</div></div>
@@ -496,6 +500,7 @@ views.lote = (el, params) => {
 };
 
 function pasteImport() {
+  if (denyRO()) return;
   openModal(`<h2>Importar lista de preços</h2>
     <p class="reason">Uma linha por item: <b>nome ; compra ; venda</b> (separador <b>;</b> ou <b>tab</b> — ideal para colar do Excel/Google Sheets). Deixe vazio o que não souber.</p>
     <textarea id="piT" placeholder="Coarse Bone Powder; 9k; 11k&#10;Steel; 45k; 52k&#10;Crystal: D Grade; ; 1,1k"></textarea>
@@ -546,7 +551,7 @@ views.item = (el, params, id) => {
       <div class="card"><div class="row"><h2 style="margin:0">Histórico de preços</h2><span class="spacer"></span><div class="chips" id="itRange">${[['7', '7d'], ['30', '30d'], ['90', '90d'], ['0', 'Tudo']].map(([v, l]) => `<button class="chip ${v === (params.get('r') || '0') ? 'on' : ''}" data-r="${v}">${l}</button>`).join('')}</div></div><div class="chart" id="itChart" style="margin-top:10px"></div></div>
       <div class="grid" style="align-content:start">
         <div class="card"><h2>Análise</h2>${st.signals.length ? st.signals.map((s) => `<div style="margin-bottom:8px"><span class="tag ${s.t}">${s.l}</span> <span class="reason">${esc(s.r)}</span></div>`).join('') : '<p class="reason">Nenhum sinal forte. Continue registrando preços — com 3+ registros o sistema compara com a média de 30 dias.</p>'}</div>
-        ${watched ? `<div class="card"><h2>Alertas de preço</h2>
+        ${watched ? `<div class="card adm"><h2>Alertas de preço</h2>
           <div class="row"><label class="f">Quero comprar se venda ≤<input class="price" id="itT" value="${st.w.target ? fmtFull(st.w.target) : ''}" placeholder="ex: 300k"></label>
           <label class="f">Quero vender se compra ≥<input class="price" id="itTS" value="${st.w.targetSell ? fmtFull(st.w.targetSell) : ''}" placeholder="ex: 500k"></label></div>
           <label class="f" style="margin-top:8px">Anotações<input id="itNote" value="${esc(st.w.note || '')}" placeholder="onde dropa, quem compra…"></label>
@@ -688,10 +693,10 @@ views.catalogo = (el) => {
 views.config = (el) => {
   el.innerHTML = `<h1>Backup & Ajustes</h1><p class="sub">Seus dados ficam salvos na nuvem (Supabase), sincronizados em qualquer dispositivo onde você entrar com sua conta.</p>
     <div class="grid g2">
-      <div class="card"><h2>Servidor</h2><label class="f">Nome exibido<input id="cfS" value="${esc(S.db.settings.server || '')}"></label><button class="btn sm" id="cfSave" style="margin-top:10px">Salvar</button></div>
+      <div class="card adm"><h2>Servidor</h2><label class="f">Nome exibido<input id="cfS" value="${esc(S.db.settings.server || '')}"></label><button class="btn sm" id="cfSave" style="margin-top:10px">Salvar</button></div>
       <div class="card"><h2>Exportar</h2><p class="reason">Backup completo (JSON) ou planilha do histórico de preços (CSV, abre no Excel).</p>
         <div class="row"><button class="btn gold" id="cfJson">Baixar backup JSON</button><button class="btn" id="cfCsv">Exportar preços CSV</button><button class="btn" id="cfCsv2">Exportar resumo do mercado CSV</button></div></div>
-      <div class="card"><h2>Importar backup</h2><p class="reason">Substitui todos os dados atuais pelo arquivo (uma cópia de segurança do estado atual é salva antes).</p><input type="file" id="cfFile" accept=".json"></div>
+      <div class="card adm"><h2>Importar backup</h2><p class="reason">Substitui todos os dados atuais pelo arquivo (uma cópia de segurança do estado atual é salva antes).</p><input type="file" id="cfFile" accept=".json"></div>
       <div class="card"><h2>Como os sinais funcionam</h2><div class="reason">
         <b>Compra (WTB)</b>: preço que os jogadores pagam pelo item (lojas de compra / “WTB”).<br>
         <b>Venda (WTS)</b>: preço pedido nas lojas de venda (“WTS”).<br>
@@ -721,7 +726,8 @@ function route() {
   const h = location.hash.slice(2) || 'dashboard';
   const [pathPart, qs] = h.split('?');
   const [name, ...rest] = pathPart.split('/');
-  const v = views[name] ? name : 'dashboard';
+  let v = views[name] ? name : 'dashboard';
+  if (!ADMIN && v === 'lote') v = 'mercado';
   $$('nav a').forEach((a) => a.classList.toggle('active', a.dataset.route === v || (v === 'item' && a.dataset.route === 'mercado')));
   const el = $('#app'); el.onclick = null;
   const fresh = el.cloneNode(false); el.replaceWith(fresh); // remove listeners antigos
@@ -745,11 +751,16 @@ async function start(user) {
   $('#userBox').hidden = false; $('#userEmail').textContent = user.email;
   if (started) return; started = true;
   $('#app').innerHTML = '<div class="empty">Carregando seus dados…</div>';
-  try { await reload(); setServerName(); route(); }
+  try {
+    ADMIN = await checkAdmin();
+    document.body.classList.toggle('readonly', !ADMIN);
+    $('#roleTag').textContent = ADMIN ? 'administrador' : 'somente leitura';
+    await reload(); setServerName(); route();
+  }
   catch (e) { $('#app').innerHTML = `<div class="empty">Erro ao carregar dados: ${esc(e.message)}<br><br>Confira se o arquivo <b>supabase/schema.sql</b> foi executado no SQL Editor do Supabase.</div>`; }
 }
 function showLogin(msg) {
-  started = false; S.db = null;
+  started = false; S.db = null; ADMIN = false;
   $('#loginBg').hidden = false; $('#userBox').hidden = true;
   if (msg) $('#lgMsg').innerHTML = msg;
 }

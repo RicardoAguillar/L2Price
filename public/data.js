@@ -32,11 +32,19 @@ const toTrade = (r) => ({ id: r.id, itemId: r.item_id, type: r.type, qty: r.qty,
 
 async function ensureWatched(ids) {
   const rows = [...new Set(ids)].map((item_id) => ({ item_id }));
-  if (rows.length) must(await sb.from('watch').upsert(rows, { onConflict: 'user_id,item_id', ignoreDuplicates: true }));
+  if (rows.length) must(await sb.from('watch').upsert(rows, { onConflict: 'item_id', ignoreDuplicates: true }));
+}
+
+export let isAdmin = false;
+export async function checkAdmin() {
+  const { data, error } = await sb.rpc('is_admin');
+  isAdmin = !error && data === true;
+  return isAdmin;
 }
 
 async function loadDb() {
-  let settings = must(await sb.from('settings').select('*').maybeSingle());
+  let settings = must(await sb.from('settings').select('*').limit(1).maybeSingle());
+  if (!settings && !isAdmin) settings = { server: 'L2 Reborn — Legacy (C1)' };
   if (!settings) { // primeiro acesso: lista padrão de itens monitorados
     await ensureWatched(catalog.filter((c) => DEFAULT_CATS.includes(c.cat)).map((c) => c.id));
     settings = must(await sb.from('settings').insert({ server: 'L2 Reborn — Legacy (C1)' }).select().single());
@@ -49,6 +57,7 @@ export async function http(method, url, body) {
   const p = url;
   let m;
   if (method === 'GET' && p === '/api/db') return loadDb();
+  if (!isAdmin) throw new Error('Somente administradores podem alterar dados.');
 
   if (method === 'POST' && p === '/api/prices') {
     const list = (Array.isArray(body) ? body : [body]).map((x) => ({
