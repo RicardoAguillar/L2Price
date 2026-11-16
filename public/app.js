@@ -1,7 +1,7 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
 import { http, sb, configured, setCatalog, checkAdmin } from './data.js';
 let ADMIN = false;
-const denyRO = () => { if (ADMIN) return false; toast('Somente administradores podem registrar ou alterar dados.', true); return true; };
+const denyRO = () => { if (ADMIN) return false; toast(currentUser ? 'Somente administradores podem registrar ou alterar dados.' : 'Entre como administrador para registrar ou alterar dados.', true); if (!currentUser) openLogin(); return true; };
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -813,6 +813,7 @@ function route() {
 const setServerName = () => ($('#serverName').textContent = S.db.settings.server || 'L2 Reborn · Legacy C1');
 
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#loginBg').hidden) return ($('#loginBg').hidden = true);
   if (e.key === 'Escape' && !$('#modalBg').hidden) return closeModal();
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
   if (!typing && $('#modalBg').hidden && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); quickPrice(); }
@@ -842,47 +843,45 @@ function passwordModal(first) {
   });
 }
 
-async function start(user) {
-  $('#loginBg').hidden = true;
-  $('#userBox').hidden = false; $('#userEmail').textContent = user.email;
-  if (started) return; started = true;
-  $('#app').innerHTML = '<div class="empty">Carregando seus dados…</div>';
+// Sessão: visitantes veem tudo sem login (somente leitura); administradores entram para editar.
+let currentUser; // undefined = ainda não carregou; null = visitante
+async function applySession(user) {
+  const uid = user?.id || null;
+  const changed = currentUser === undefined || (currentUser?.id || null) !== uid;
+  currentUser = user || null;
+  $('#userBox').hidden = !user; $('#loginBtn').hidden = !!user;
+  if (user) { $('#userEmail').textContent = user.email; $('#loginBg').hidden = true; }
+  if (!changed) return;
   try {
-    ADMIN = await checkAdmin();
+    ADMIN = user ? await checkAdmin() : false;
+    if (!user) await checkAdmin(); // zera o estado de admin na camada de dados
     document.body.classList.toggle('readonly', !ADMIN);
     $('#roleTag').textContent = ADMIN ? 'administrador' : 'somente leitura';
+    if (!S.db) $('#app').innerHTML = '<div class="empty">Carregando dados do mercado…</div>';
     await reload(); setServerName(); route();
+  } catch (e) {
+    $('#app').innerHTML = `<div class="empty">Erro ao carregar dados: ${esc(e.message)}</div>`;
   }
-  catch (e) { $('#app').innerHTML = `<div class="empty">Erro ao carregar dados: ${esc(e.message)}<br><br>Confira se o arquivo <b>supabase/schema.sql</b> foi executado no SQL Editor do Supabase.</div>`; }
 }
-function showLogin(msg) {
-  started = false; S.db = null; ADMIN = false;
-  $('#loginBg').hidden = false; $('#userBox').hidden = true;
-  if (msg) $('#lgMsg').innerHTML = msg;
-}
+function openLogin() { $('#lgMsg').textContent = ''; $('#loginBg').hidden = false; $('#lgEmail').focus(); }
 
 (async () => {
   S.catalog = await (await fetch('data/catalog.json')).json();
   S.byId = new Map(S.catalog.map((c) => [c.id, c]));
   setCatalog(S.catalog);
-  if (!configured) return showLogin('<span class="down">Supabase não configurado: preencha <b>public/config.js</b> com a URL e a chave anon do projeto.</span>');
+  if (!configured) { $('#app').innerHTML = '<div class="empty">Supabase não configurado: preencha <b>public/config.js</b>.</div>'; return; }
 
-  let signup = false;
-  $('#lgToggle').onclick = (e) => {
-    e.preventDefault(); signup = !signup;
-    $('#lgBtn').textContent = signup ? 'Criar conta' : 'Entrar';
-    $('#lgToggle').textContent = signup ? 'Já tenho conta — entrar' : 'Primeiro acesso? Criar conta';
-  };
+  $('#loginBtn').onclick = openLogin;
+  $('#lgClose').onclick = () => ($('#loginBg').hidden = true);
+  $('#loginBg').addEventListener('mousedown', (e) => { if (e.target.id === 'loginBg') $('#loginBg').hidden = true; });
   $('#loginForm').onsubmit = async (e) => {
     e.preventDefault();
     const email = $('#lgEmail').value.trim(), password = $('#lgPass').value;
     $('#lgBtn').disabled = true; $('#lgMsg').textContent = '';
-    const { data, error } = signup
-      ? await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split('#')[0] } })
-      : await sb.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     $('#lgBtn').disabled = false;
     if (error) return ($('#lgMsg').innerHTML = `<span class="down">${esc(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos' : error.message)}</span>`);
-    if (signup && !data.session) $('#lgMsg').innerHTML = '<span class="up">Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.</span>';
+    $('#lgPass').value = '';
   };
   $('#logoutBtn').onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
   $('#pwdBtn').onclick = (e) => { e.preventDefault(); passwordModal(false); };
@@ -897,7 +896,9 @@ function showLogin(msg) {
 
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') askPwd = true;
-    if (session?.user) setTimeout(async () => { await start(session.user); if (askPwd) { askPwd = false; passwordModal(true); } }); // fora do callback (recomendação do supabase-js)
-    else showLogin();
+    setTimeout(async () => { // fora do callback (recomendação do supabase-js)
+      await applySession(session?.user || null);
+      if (askPwd && session?.user) { askPwd = false; passwordModal(true); }
+    });
   });
 })();

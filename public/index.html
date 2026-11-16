@@ -22,18 +22,19 @@
     <a href="#/catalogo" data-route="catalogo"><span>☰</span>Catálogo C1</a>
     <a href="#/config" data-route="config"><span>⚙</span>Backup & Ajustes</a>
   </nav>
+  <button class="btn quick" id="loginBtn" hidden>🔑 Entrar (administrador)</button>
   <button class="btn gold quick" id="quickBtn">+ Registrar preço <kbd>N</kbd></button>
   <div class="side-foot"><div id="userBox" hidden><span id="userEmail"></span> · <a href="#" id="pwdBtn">trocar senha</a> · <a href="#" id="logoutBtn">sair</a><br><span class="tag hold" id="roleTag"></span></div>Dados de itens e ícones: l2hub.info (C1)</div>
 </aside>
 <div class="login-bg" id="loginBg" hidden>
   <form class="login" id="loginForm">
+    <button type="button" class="btn ghost sm" id="lgClose" style="align-self:flex-end;margin:-12px -12px 0 0">✕</button>
     <img src="icons/etc_crystal_gold_i00.png" alt="">
     <h1>L2Price</h1>
-    <p class="sub" id="loginSub">Controle de preços · L2 Reborn Legacy (C1)</p>
+    <p class="sub" id="loginSub">Acesso para administradores registrarem e editarem preços</p>
     <label class="f">E-mail<input type="email" id="lgEmail" required autocomplete="email"></label>
     <label class="f">Senha<input type="password" id="lgPass" required minlength="6" autocomplete="current-password"></label>
     <button class="btn gold" type="submit" id="lgBtn">Entrar</button>
-    <a href="#" id="lgToggle">Primeiro acesso? Criar conta</a>
     <a href="#" id="lgForgot">Esqueci minha senha</a>
     <div class="pricehelp" id="lgMsg"></div>
   </form>
