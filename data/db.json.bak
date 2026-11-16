@@ -1,0 +1,574 @@
+{
+ "version": 1,
+ "watch": [
+  {
+   "id": "admantite_nugget",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "adamantite_ore",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "animal_bone",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "animal_skin",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "artisan's_frame",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "asofe",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blacksmith's_frame",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_none",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "blessed_spiritshot_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "braided_hemp",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "charcoal",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "coal",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "coarse_bone_powder",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cokes",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "compound_braid",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cord",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crafted_leather",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "craftsman_mold",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_am_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_am_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_am_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_am_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_am_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cry_scrl_of_ench_wp_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cry_scrl_of_ench_wp_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cry_scrl_of_ench_wp_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cry_scrl_of_ench_wp_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "cry_scrl_of_ench_wp_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crystal_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crystal_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crystal_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crystal_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "crystal_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "enria",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "fine_steel_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "gemstone_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "gemstone_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "gemstone_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "gemstone_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "gemstone_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "headless_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "high_grade_suede",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "iron_ore",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "leather",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "maestro_anvil_lock",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "maestro_holder",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "maestro_mold",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "metallic_fiber",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mithirl_alloy",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mithril_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mithril_ore",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mold_glue",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mold_hardener",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "mold_lubricant",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "oriharukon",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "oriharukon_ore_1",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_wp_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_wp_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_wp_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_wp_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "scrl_of_ench_wp_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "shining_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "silver_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "silver_mold",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "silver_nugget",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_none",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "soulshot_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spider_silk",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_a",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_b",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_c",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_d",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_none",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "spiritshot_s",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "steel",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "steel_mold",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "stem",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "stone_of_purity",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "suede",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "synthesis_cokes",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "tamrin_orcs_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "thons",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "thread",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "varnish",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "varnish_of_purity",
+   "fav": false,
+   "target": null,
+   "note": ""
+  },
+  {
+   "id": "wooden_arrow",
+   "fav": false,
+   "target": null,
+   "note": ""
+  }
+ ],
+ "prices": [],
+ "trades": [],
+ "settings": {
+  "server": "L2 Reborn — Legacy (C1)"
+ }
+}

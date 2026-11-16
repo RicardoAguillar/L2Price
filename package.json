@@ -1,0 +1,11 @@
+{
+  "name": "l2price",
+  "version": "1.0.0",
+  "description": "Controle de preços de compra e venda — Lineage 2 C1 (L2 Reborn Legacy)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "update-db": "node scripts/crawl-l2hub.mjs && node scripts/build-catalog.mjs"
+  }
+}
