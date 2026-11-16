@@ -141,7 +141,7 @@ tr.click{cursor:pointer}
 .batch .last{font-size:12px;color:var(--muted)}
 .section-h{background:#1c1b18 !important;color:var(--gold);font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase}
 
-.stat-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.stat-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
 @media(max-width:1200px){.stat-row{grid-template-columns:repeat(3,1fr)}}
 .stat{background:var(--panel2);border-radius:8px;padding:10px 12px}
 .stat .lbl{font-size:11px;color:var(--muted)}

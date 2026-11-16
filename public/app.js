@@ -55,7 +55,7 @@ const fmtFull = (n) => (n === null || n === undefined ? '—' : Math.round(n).to
 function fmt(n) { // estilo L2: 1.25kk / 350k
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
   const a = Math.abs(n), sign = n < 0 ? '-' : '';
-  const trim = (x) => (x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(/\.?0+$/, '').replace('.', ',');
+  const trim = (x) => { let s = x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.toFixed(2); if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, ''); return s.replace('.', ','); };
   if (a >= 1e9) return sign + trim(a / 1e9) + 'kkk';
   if (a >= 1e6) return sign + trim(a / 1e6) + 'kk';
   if (a >= 1e4) return sign + trim(a / 1e3) + 'k';
@@ -420,7 +420,7 @@ views.mercado = (el) => {
       ${CAT_ORDER.filter((c) => cats[c]).map((c) => `<button class="chip ${mk.cat === c ? 'on' : ''}" data-cat="${c}">${CATS[c]}<b>${cats[c]}</b></button>`).join('')}</div>
     <div class="card flush"><div style="overflow:auto;max-height:calc(100vh - 290px)"><table id="mkT"></table></div></div>`;
   $('#mkOnly').value = mk.only;
-  const cols = [['', ''], ['name', 'Item'], ['buy', 'Compra (WTB)', 'r'], ['sell', 'Venda (WTS)', 'r'], ['margin', 'Spread', 'r'], ['chLast', 'Últ. var.', 'r'], ['ch7', '7 dias', 'r'], ['ch30', '30 dias', 'r'], ['spark', 'Tendência'], ['npc', 'NPC paga', 'r'], ['score', 'Sinal'], ['last', 'Atualizado', 'r'], ['', '']];
+  const cols = [['', ''], ['name', 'Item'], ['buy', 'Compra (WTB)', 'r'], ['sell', 'Venda (WTS)', 'r'], ['margin', 'Spread', 'r'], ['chLast', 'Últ. var.', 'r'], ['ch7', '7 dias', 'r'], ['ch30', '30 dias', 'r'], ['spark', 'Tendência'], ['npcBuy', 'NPC vende', 'r'], ['npc', 'NPC paga', 'r'], ['score', 'Sinal'], ['last', 'Atualizado', 'r'], ['', '']];
   const draw = () => {
     const n = norm(mk.q);
     let rows = watchedStats().filter((s) => (!mk.cat || s.it.cat === mk.cat) && (!n || norm(s.it.name).includes(n)));
@@ -428,7 +428,7 @@ views.mercado = (el) => {
     if (mk.only === 'priced') rows = rows.filter((s) => s.ref !== null);
     if (mk.only === 'nopriced') rows = rows.filter((s) => s.ref === null);
     if (mk.only === 'signal') rows = rows.filter((s) => s.signals.length);
-    const key = { name: (s) => s.it.name, npc: (s) => s.npcSell, last: (s) => (s.last ? +new Date(s.last) : null) }[mk.sort] || ((s) => s[mk.sort]);
+    const key = { name: (s) => s.it.name, npc: (s) => s.npcSell, npcBuy: (s) => s.it.npc || null, last: (s) => (s.last ? +new Date(s.last) : null) }[mk.sort] || ((s) => s[mk.sort]);
     rows.sort((a, b) => {
       const va = key(a), vb = key(b);
       if (va === null || va === undefined) return 1; if (vb === null || vb === undefined) return -1;
@@ -443,10 +443,11 @@ views.mercado = (el) => {
         <td class="r">${s.spread !== null ? `${fmt(s.spread)}<br><small class="muted">${(s.margin * 100).toFixed(0)}%</small>` : '<span class="muted">—</span>'}</td>
         <td class="r">${chg(s.chLast)}</td><td class="r">${chg(s.ch7)}</td><td class="r">${chg(s.ch30)}</td>
         <td>${spark(s.spark)}</td>
+        <td class="r muted" title="Preço da loja do NPC (preço base do item; nem todo item é vendido por NPCs)">${s.it.npc ? fmt(s.it.npc) : '—'}</td>
         <td class="r muted" title="Preço que o NPC paga (metade do preço de loja)">${s.npcSell ? fmt(s.npcSell) : '—'}</td>
         <td>${sigTags(s)}</td>
         <td class="r muted">${s.last ? ago(s.last) : 'nunca'}</td>
-        <td class="r"><button class="btn sm" data-qp title="Registrar preço">+ preço</button></td></tr>`).join('') || `<tr><td colspan="13" class="empty">Nenhum item. <a href="#/catalogo">Adicione itens pelo catálogo</a>.</td></tr>`}</tbody>`;
+        <td class="r"><button class="btn sm" data-qp title="Registrar preço">+ preço</button></td></tr>`).join('') || `<tr><td colspan="14" class="empty">Nenhum item. <a href="#/catalogo">Adicione itens pelo catálogo</a>.</td></tr>`}</tbody>`;
   };
   draw();
   $('#mkQ').oninput = (e) => { mk.q = e.target.value; draw(); };
@@ -568,7 +569,8 @@ views.item = (el, params, id) => {
       <div class="stat"><div class="lbl">Spread</div><div class="val">${st.spread != null ? fmt(st.spread) + ` <small class="muted">${(st.margin * 100).toFixed(0)}%</small>` : '—'}</div></div>
       <div class="stat"><div class="lbl">Variação 7d / 30d</div><div class="val" style="font-size:14px">${chg(st.ch7)} · ${chg(st.ch30)}</div></div>
       <div class="stat"><div class="lbl">Média / mín / máx 30d</div><div class="val" style="font-size:14px">${fmt(st.avg30)} · ${fmt(st.min30)} · ${fmt(st.max30)}</div></div>
-      <div class="stat"><div class="lbl">NPC paga · Volatilidade</div><div class="val" style="font-size:14px">${st.npcSell ? fmt(st.npcSell) : '—'} · ${st.vol != null ? (st.vol * 100).toFixed(0) + '%' : '—'}</div></div>
+      <div class="stat" title="Preço base da loja do NPC. Nem todo item é vendido por NPCs."><div class="lbl">NPC vende · NPC paga</div><div class="val" style="font-size:14px">${it.npc ? fmt(it.npc) : '—'} · ${st.npcSell ? fmt(st.npcSell) : '—'}</div></div>
+      <div class="stat"><div class="lbl">Volatilidade 30d</div><div class="val" style="font-size:14px">${st.vol != null ? (st.vol * 100).toFixed(0) + '%' : '—'}</div></div>
     </div>
     <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(280px,1fr)">
       <div class="card"><div class="row"><h2 style="margin:0">Histórico de preços</h2><span class="spacer"></span><div class="chips" id="itRange">${[['7', '7d'], ['30', '30d'], ['90', '90d'], ['0', 'Tudo']].map(([v, l]) => `<button class="chip ${v === (params.get('r') || '0') ? 'on' : ''}" data-r="${v}">${l}</button>`).join('')}</div></div><div class="chart" id="itChart" style="margin-top:10px"></div></div>
