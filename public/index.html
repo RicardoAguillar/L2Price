@@ -23,7 +23,7 @@
     <a href="#/config" data-route="config"><span>⚙</span>Backup & Ajustes</a>
   </nav>
   <button class="btn gold quick" id="quickBtn">+ Registrar preço <kbd>N</kbd></button>
-  <div class="side-foot"><div id="userBox" hidden><span id="userEmail"></span> · <a href="#" id="logoutBtn">sair</a><br><span class="tag hold" id="roleTag"></span></div>Dados de itens e ícones: l2hub.info (C1)</div>
+  <div class="side-foot"><div id="userBox" hidden><span id="userEmail"></span> · <a href="#" id="pwdBtn">trocar senha</a> · <a href="#" id="logoutBtn">sair</a><br><span class="tag hold" id="roleTag"></span></div>Dados de itens e ícones: l2hub.info (C1)</div>
 </aside>
 <div class="login-bg" id="loginBg" hidden>
   <form class="login" id="loginForm">
@@ -34,6 +34,7 @@
     <label class="f">Senha<input type="password" id="lgPass" required minlength="6" autocomplete="current-password"></label>
     <button class="btn gold" type="submit" id="lgBtn">Entrar</button>
     <a href="#" id="lgToggle">Primeiro acesso? Criar conta</a>
+    <a href="#" id="lgForgot">Esqueci minha senha</a>
     <div class="pricehelp" id="lgMsg"></div>
   </form>
 </div>
@@ -44,6 +45,7 @@
 </div>
 <div id="toasts"></div>
 <div id="tip" class="tip" hidden></div>
+<script>window.__authType = (location.hash.match(/type=(invite|recovery|signup)/) || [])[1] || "";</script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

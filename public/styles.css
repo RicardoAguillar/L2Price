@@ -169,3 +169,5 @@ body.readonly :is(#quickBtn, nav a[data-route=lote], #mkQuick, button[data-qp], 
   [data-edit], [data-del], #pfSell, #pfBuy, #cgAll, [data-add], .adm, button[onclick*="catalogo"], button[onclick*="lote"]) { display:none !important }
 body.readonly [data-qp] { cursor:default !important }
 #roleTag{margin-top:4px}
+
+.login a{font-size:13px}

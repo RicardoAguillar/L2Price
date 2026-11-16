@@ -821,6 +821,25 @@ let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTime
 
 // ---------------- login / inicialização ----------------
 let started = false;
+function passwordModal(first) {
+  openModal(`<h2>${first ? 'Crie sua senha' : 'Trocar senha'}</h2>
+    ${first ? '<p class="reason">Bem-vindo! Defina uma senha para entrar nas próximas vezes com seu e-mail.</p>' : ''}
+    <label class="f">Nova senha (mínimo 6 caracteres)<input type="password" id="pw1" autocomplete="new-password"></label>
+    <label class="f" style="margin-top:10px">Repita a senha<input type="password" id="pw2" autocomplete="new-password"></label>
+    <div class="row" style="margin-top:16px"><span class="spacer"></span>${first ? '' : '<button class="btn ghost" id="pwX">Cancelar</button>'}<button class="btn gold" id="pwOk">Salvar senha</button></div>`, (m) => {
+    if (!first) $('#pwX', m).onclick = closeModal;
+    $('#pw1', m).focus();
+    $('#pwOk', m).onclick = async () => {
+      const p1 = $('#pw1', m).value, p2 = $('#pw2', m).value;
+      if (p1.length < 6) return toast('A senha precisa ter pelo menos 6 caracteres', true);
+      if (p1 !== p2) return toast('As senhas não conferem', true);
+      const { error } = await sb.auth.updateUser({ password: p1 });
+      if (error) return toast(error.message, true);
+      toast('Senha salva!'); closeModal();
+    };
+  });
+}
+
 async function start(user) {
   $('#loginBg').hidden = true;
   $('#userBox').hidden = false; $('#userEmail').textContent = user.email;
@@ -864,9 +883,19 @@ function showLogin(msg) {
     if (signup && !data.session) $('#lgMsg').innerHTML = '<span class="up">Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.</span>';
   };
   $('#logoutBtn').onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
+  $('#pwdBtn').onclick = (e) => { e.preventDefault(); passwordModal(false); };
+  $('#lgForgot').onclick = async (e) => {
+    e.preventDefault();
+    const email = $('#lgEmail').value.trim();
+    if (!email) return ($('#lgMsg').innerHTML = '<span class="down">Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".</span>');
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+    $('#lgMsg').innerHTML = error ? `<span class="down">${esc(error.message)}</span>` : '<span class="up">Enviamos um link para seu e-mail. Abra-o para criar uma nova senha.</span>';
+  };
+  let askPwd = window.__authType === 'invite' || window.__authType === 'recovery';
 
   sb.auth.onAuthStateChange((event, session) => {
-    if (session?.user) setTimeout(() => start(session.user)); // fora do callback (recomendação do supabase-js)
+    if (event === 'PASSWORD_RECOVERY') askPwd = true;
+    if (session?.user) setTimeout(async () => { await start(session.user); if (askPwd) { askPwd = false; passwordModal(true); } }); // fora do callback (recomendação do supabase-js)
     else showLogin();
   });
 })();
