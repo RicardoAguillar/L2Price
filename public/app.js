@@ -1,5 +1,5 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
-import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=9';
+import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=10';
 let ADMIN = false;
 const denyRO = () => { if (ADMIN) return false; toast(currentUser ? 'Somente administradores podem registrar ou alterar dados.' : 'Entre como administrador para registrar ou alterar dados.', true); if (!currentUser) openLogin(); return true; };
 const $ = (s, el = document) => el.querySelector(s);
@@ -623,16 +623,16 @@ function byCity(list, days = 30) {
 function crystalCard(it) {
   if (!it.cryN) return ['weapon', 'armor', 'jewel'].includes(it.cat) ? '<div class="card"><h2>Cristais ao quebrar</h2><div class="reason muted">Item sem grau (No-Grade): não gera cristais ao ser quebrado. Só itens de grau D, C, B, A e S geram cristais.</div></div>' : '';
   const cr = S.byId.get('crystal_' + it.cry.toLowerCase());
-  const npcPays = Math.floor((it.npc || 0) / 2);
-  const per = npcPays ? npcPays / it.cryN : null;
+  const npcSells = it.npc || 0;
+  const per = npcSells ? npcSells / it.cryN : null;
   const cs = cr && S.stats.get(cr.id);
   const mkt = cs && (cs.buy ?? cs.sell);
   const row = (l, v, t = '') => `<div class="row" style="justify-content:space-between" title="${t}"><span class="muted">${l}</span><b>${v}</b></div>`;
   return `<div class="card"><h2>Cristais ao quebrar</h2>
     <div class="row" style="gap:10px;align-items:center;margin-bottom:10px">${cr ? `<img src="icons/${cr.icon}.png" width="32" height="32" alt="">` : ''}
       <div><div style="font-size:20px"><b>${fmtFull(it.cryN)}</b> × ${cr ? `<a href="#/item/${cr.id}">${esc(cr.name)}</a>` : 'Crystal ' + it.cry}</div></div></div>
-    ${row('NPC paga pelo item', npcPays ? fmtFull(npcPays) : '—', 'Metade do preço de loja do NPC')}
-    ${row('Valor mínimo por cristal', per != null ? fmtFull(Math.round(per)) : '—', 'NPC paga ÷ quantidade de cristais. Abaixo disso, vale mais vender o item ao NPC do que quebrar.')}
+    ${row('NPC vende o item', npcSells ? fmtFull(npcSells) : '—', 'Preço da loja do NPC')}
+    ${row('Valor mínimo por cristal', per != null ? fmtFull(Math.round(per)) : '—', 'Preço de loja do NPC ÷ quantidade de cristais.')}
     ${mkt ? row('Cristal no mercado', `<span class="${mkt >= per ? 'up' : 'down'}">${fmtFull(mkt)}</span>`, 'Último preço registrado do cristal') + row('Quebrar rende', fmtFull(mkt * it.cryN)) : ''}
   </div>`;
 }
@@ -880,7 +880,7 @@ async function applySession(user) {
 function openLogin() { $('#lgMsg').textContent = ''; $('#loginBg').hidden = false; $('#lgEmail').focus(); }
 
 (async () => {
-  S.catalog = await (await fetch('data/catalog.json?v=9')).json();
+  S.catalog = await (await fetch('data/catalog.json?v=10')).json();
   S.byId = new Map(S.catalog.map((c) => [c.id, c]));
   setCatalog(S.catalog);
   if (!configured) { $('#app').innerHTML = '<div class="empty">Supabase não configurado: preencha <b>public/config.js</b>.</div>'; return; }
