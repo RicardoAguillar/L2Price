@@ -1,5 +1,5 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
-import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=8';
+import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=9';
 let ADMIN = false;
 const denyRO = () => { if (ADMIN) return false; toast(currentUser ? 'Somente administradores podem registrar ou alterar dados.' : 'Entre como administrador para registrar ou alterar dados.', true); if (!currentUser) openLogin(); return true; };
 const $ = (s, el = document) => el.querySelector(s);
@@ -621,7 +621,7 @@ function byCity(list, days = 30) {
 }
 // Cristais gerados ao quebrar (cristalizar) o item e o valor mínimo de cada cristal.
 function crystalCard(it) {
-  if (!it.cryN) return '';
+  if (!it.cryN) return ['weapon', 'armor', 'jewel'].includes(it.cat) ? '<div class="card"><h2>Cristais ao quebrar</h2><div class="reason muted">Item sem grau (No-Grade): não gera cristais ao ser quebrado. Só itens de grau D, C, B, A e S geram cristais.</div></div>' : '';
   const cr = S.byId.get('crystal_' + it.cry.toLowerCase());
   const npcPays = Math.floor((it.npc || 0) / 2);
   const per = npcPays ? npcPays / it.cryN : null;
@@ -880,7 +880,7 @@ async function applySession(user) {
 function openLogin() { $('#lgMsg').textContent = ''; $('#loginBg').hidden = false; $('#lgEmail').focus(); }
 
 (async () => {
-  S.catalog = await (await fetch('data/catalog.json?v=8')).json();
+  S.catalog = await (await fetch('data/catalog.json?v=9')).json();
   S.byId = new Map(S.catalog.map((c) => [c.id, c]));
   setCatalog(S.catalog);
   if (!configured) { $('#app').innerHTML = '<div class="empty">Supabase não configurado: preencha <b>public/config.js</b>.</div>'; return; }
