@@ -66,6 +66,11 @@ export async function http(method, url, body) {
     if (isAdmin) await ensureWatched([body.itemId]);
     return { ok: true };
   }
+  if ((m = p.match(/^\/api\/trades\/(.+)$/)) && method === 'PUT') {
+    must(await sb.from('trades').update({ item_id: body.itemId, type: body.type === 'sell' ? 'sell' : 'buy', qty: Math.max(1, num(body.qty) || 1),
+      price: num(body.price) || 0, note: String(body.note || '').slice(0, 200) }).eq('id', m[1]));
+    return { ok: true };
+  }
   if ((m = p.match(/^\/api\/trades\/(.+)$/)) && method === 'DELETE') { must(await sb.from('trades').delete().eq('id', m[1])); return { ok: true }; }
   }
   if (!isAdmin) throw new Error('Somente administradores podem alterar dados.');

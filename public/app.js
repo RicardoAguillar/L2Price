@@ -1,5 +1,5 @@
 // L2Price — frontend (vanilla JS) com dados no Supabase
-import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=10';
+import { http, sb, configured, setCatalog, checkAdmin } from './data.js?v=11';
 let ADMIN = false;
 const denyRO = () => { if (ADMIN) return false; toast(currentUser ? 'Somente administradores podem registrar ou alterar dados.' : 'Entre como administrador para registrar ou alterar dados.', true); if (!currentUser) openLogin(); return true; };
 const $ = (s, el = document) => el.querySelector(s);
@@ -321,10 +321,11 @@ function quickPrice(preId) {
   });
 }
 
-function tradeModal(preId, type = 'buy') {
+function tradeModal(preId, type = 'buy', edit = null) {
   if (!currentUser) { toast('Entre com sua conta para usar a carteira.', true); return openLogin(); }
-  let picked = preId ? S.byId.get(preId) : null;
-  openModal(`<h2>Registrar operação na carteira</h2>
+  let picked = edit ? S.byId.get(edit.itemId) : preId ? S.byId.get(preId) : null;
+  if (edit) type = edit.type;
+  openModal(`<h2>${edit ? 'Editar operação' : 'Registrar operação na carteira'}</h2>
     <div id="tmPick"></div>
     <div class="row" style="margin-top:10px">
       <label class="f">Tipo<select id="tmType"><option value="buy">Comprei</option><option value="sell">Vendi</option></select></label>
@@ -335,6 +336,7 @@ function tradeModal(preId, type = 'buy') {
     <div class="pricehelp" id="tmPrev"></div>
     <div class="row" style="margin-top:16px"><span class="spacer"></span><button class="btn ghost" id="tmCancel">Cancelar</button><button class="btn gold" id="tmSave">Salvar</button></div>`, (m) => {
     $('#tmType', m).value = type;
+    if (edit) { $('#tmQty', m).value = edit.qty; $('#tmPrice', m).value = edit.price; $('#tmNote', m).value = edit.note || ''; }
     const drawPick = () => {
       if (picked) { $('#tmPick', m).innerHTML = `<div class="picked">${icon(picked, 'lg')}<b style="flex:1">${esc(picked.name)}</b><button class="btn sm" id="tmChange">Trocar</button></div>`; $('#tmChange', m).onclick = () => { picked = null; drawPick(); }; $('#tmPrice', m).focus(); return; }
       $('#tmPick', m).innerHTML = `<input id="tmQ" type="search" placeholder="Buscar item…" style="width:100%"><div class="sresults" id="tmRes"></div>`;
@@ -346,13 +348,13 @@ function tradeModal(preId, type = 'buy') {
     };
     drawPick();
     const prev = () => { const q = parsePrice($('#tmQty', m).value) || 0, p = parsePrice($('#tmPrice', m).value) || 0; $('#tmPrev', m).textContent = `Total: ${fmtFull(q * p)} adena`; };
-    $('#tmQty', m).oninput = prev; $('#tmPrice', m).oninput = prev;
+    $('#tmQty', m).oninput = prev; $('#tmPrice', m).oninput = prev; if (edit) prev();
     $('#tmCancel', m).onclick = closeModal;
     $('#tmSave', m).onclick = async () => {
       if (!picked) return toast('Escolha um item', true);
       try {
-        await http('POST', '/api/trades', { itemId: picked.id, type: $('#tmType', m).value, qty: parsePrice($('#tmQty', m).value), price: parsePrice($('#tmPrice', m).value), note: $('#tmNote', m).value });
-        toast('Operação registrada'); closeModal(); await reload(); route();
+        await http(edit ? 'PUT' : 'POST', edit ? '/api/trades/' + edit.id : '/api/trades', { itemId: picked.id, type: $('#tmType', m).value, qty: parsePrice($('#tmQty', m).value), price: parsePrice($('#tmPrice', m).value), note: $('#tmNote', m).value });
+        toast(edit ? 'Operação atualizada' : 'Operação registrada'); closeModal(); await reload(); route();
       } catch (e) { toast(e.message, true); }
     };
   });
@@ -737,11 +739,12 @@ views.carteira = (el) => {
         <td class="r ${r.unreal >= 0 ? 'up' : 'down'}">${fmt(r.unreal)}</td><td class="r">${r.cost ? chg(r.unreal / r.cost) : '—'}</td><td class="r ${r.realized >= 0 ? 'up' : 'down'}">${fmt(r.realized)}</td><td>${r.st ? sigTags(r.st) : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Nenhuma posição. Clique em “Registrar compra”.</td></tr>'}
     </tbody></table></div>
     <div class="card flush"><div style="padding:16px 16px 0"><h2>Histórico de operações</h2></div><table><thead><tr><th>Data</th><th>Item</th><th>Tipo</th><th class="r">Qtd</th><th class="r">Preço un.</th><th class="r">Total</th><th>Obs.</th><th></th></tr></thead><tbody>
-      ${trades.map((t) => { const it = S.byId.get(t.itemId); return `<tr><td>${fmtDT(t.date)}</td><td>${it ? itemCell(it) : t.itemId}</td><td>${t.type === 'buy' ? '<span class="buy">Compra</span>' : '<span class="sell">Venda</span>'}</td><td class="r">${fmtFull(t.qty)}</td><td class="r">${fmt(t.price)}</td><td class="r">${fmt(t.qty * t.price)}</td><td class="muted">${esc(t.note)}</td><td class="r"><button class="btn sm ghost danger" data-tdel="${t.id}">excluir</button></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Sem operações</td></tr>'}
+      ${trades.map((t) => { const it = S.byId.get(t.itemId); return `<tr><td>${fmtDT(t.date)}</td><td>${it ? itemCell(it) : t.itemId}</td><td>${t.type === 'buy' ? '<span class="buy">Compra</span>' : '<span class="sell">Venda</span>'}</td><td class="r">${fmtFull(t.qty)}</td><td class="r">${fmt(t.price)}</td><td class="r">${fmt(t.qty * t.price)}</td><td class="muted">${esc(t.note)}</td><td class="r"><button class="btn sm ghost" data-tedit="${t.id}">editar</button><button class="btn sm ghost danger" data-tdel="${t.id}">excluir</button></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Sem operações</td></tr>'}
     </tbody></table></div>`;
   $('#pfBuy').onclick = () => tradeModal(null, 'buy');
   $('#pfSell').onclick = () => tradeModal(null, 'sell');
   el.onclick = async (e) => {
+    const ed = e.target.closest('[data-tedit]'); if (ed) { const t = trades.find((x) => String(x.id) === ed.dataset.tedit); if (t) tradeModal(null, t.type, t); return; }
     const d = e.target.closest('[data-tdel]'); if (d) { if (confirm('Excluir operação?')) { await http('DELETE', '/api/trades/' + d.dataset.tdel); await reload(); route(); } return; }
     const g = e.target.closest('[data-go]'); if (g) location.hash = '#/item/' + encodeURIComponent(g.dataset.go);
   };
